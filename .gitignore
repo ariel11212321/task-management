@@ -1,10 +1,11 @@
 # Dependencies
 /task-management-front/node_modules
 /backend/node_modules
-
+/task-management-front/public
 # Production build files
 /task-management-front/build
 /backend/dist
+
 
 # Environment variables
 .env
