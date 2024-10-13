@@ -14,7 +14,7 @@ export default function SideBar() {
           </div>
           <nav>
             <ul className="space-y-2">
-              <li onClick={() => gotoPage("/sidebar")} className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">Dashboard</li>
+              <li onClick={() => gotoPage("/home")} className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">Dashboard</li>
               <li onClick={() => gotoPage("/groupTasks")} className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">group tasks</li>
               <li onClick={() => gotoPage("/settings")} className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">Settings</li>
               <li onClick={() => gotoPage("/calendar")} className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">Calendar</li>

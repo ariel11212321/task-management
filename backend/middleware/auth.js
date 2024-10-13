@@ -52,7 +52,7 @@ const auth = {
     }
 
     const token = auth.generateToken(user._id);
-    return { user: { id: user._id, email: user.email }, token };
+    return { user, token };
   },
 
   register: async (userData) => {
