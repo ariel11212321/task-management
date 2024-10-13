@@ -1,43 +1,70 @@
-import React, { useState } from 'react';
-import { Plus, Menu, Search, Bell, User, ChevronDown, MoreHorizontal } from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Plus, Menu, Search, Bell, User, ChevronDown } from 'lucide-react';
 import AddTaskForm from '../AddTaskForm';
 import TaskItem from '../TaskItem';
-
+import SideBar from '../SideBar';
+import useHttp from '../../hooks/useHttp';
+import config from '../../config.json';
+import { useAuth } from '../../contexts/AuthContext';
+import { useUser } from '../../contexts/UserContext';
+import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
-    const [tasks, setTasks] = useState([
-      { name: 'Design new landing page', dueDate: 'Tomorrow' },
-      { name: 'Update user profile section', dueDate: 'Next week' },
-      { name: 'Fix login bug', dueDate: 'Today' },
-    ]);
+    const [allTasks, setAllTasks] = useState([]);
+    const [displayedTasks, setDisplayedTasks] = useState([]);
     const [isAddingTask, setIsAddingTask] = useState(false);
-    
-    const addTask = () => {
-      
-    }
-    
+    const { sendRequest, isLoading, error } = useHttp();
+    const { isAuthenticated, token } = useAuth();
+    const { user, updateUser } = useUser();
+    const navigate = useNavigate();
+
+    const addTask = useCallback(async (data) => {
+        if (isAuthenticated) {
+            const res = await sendRequest(config.SERVER_URL + "/tasks/", 'POST', data, {
+                'Authorization': 'Bearer ' + token
+            });
+            if (res) {
+                setAllTasks(prevTasks => [...prevTasks, res]);
+                setDisplayedTasks(prevTasks => [...prevTasks, res]);
+            }
+        } else {
+            navigate("/login");
+        }
+    }, [isAuthenticated, sendRequest, token, navigate]);
+
+    const searchTasks = useCallback((searchTerm) => {
+        const filteredTasks = allTasks.filter(task =>
+            task.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setDisplayedTasks(filteredTasks);
+    }, [allTasks]);
+
+    const fetchTasks = async () => {
+        if (isAuthenticated) {
+            const res = await sendRequest(config.SERVER_URL + "/tasks/", 'GET', null, {
+                'Authorization': 'Bearer ' + token
+            });
+            if (res) {
+                setAllTasks(res);
+                setDisplayedTasks(res);
+            }
+        } else {
+            navigate("/login");
+        }
+    };
+
+    useEffect(() => {
+        fetchTasks();
+    }, []);
   
     return (
       <div className="flex h-screen bg-gray-100">
-        {/* Sidebar */}
-        <div className="w-64 bg-indigo-800 text-white p-4">
-          <div className="flex items-center mb-8">
-            <div className="w-8 h-8 bg-white rounded-md mr-2"></div>
-            <h1 className="text-xl font-bold">Your Workspace</h1>
-          </div>
-          <nav>
-            <ul className="space-y-2">
-              <li className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">Dashboard</li>
-              <li className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">My Tasks</li>
-              <li className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">Projects</li>
-              <li className="p-2 hover:bg-indigo-700 rounded-md cursor-pointer">Calendar</li>
-            </ul>
-          </nav>
-        </div>
+        
+        <SideBar/>
   
-        {/* Main Content */}
+      
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Header */}
+        
           <header className="bg-white shadow-sm">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center">
@@ -47,6 +74,7 @@ export default function Home() {
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <input
+                    onChange={(e) => searchTasks(e.target.value)}
                     type="text"
                     placeholder="Search..."
                     className="pl-8 pr-2 py-1 rounded-md border focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -61,8 +89,7 @@ export default function Home() {
               </div>
             </div>
           </header>
-  
-          {/* Task List */}
+ 
           <main className="flex-1 overflow-y-auto p-4">
             <div className="bg-white rounded-lg shadow p-4">
               <div className="flex justify-between items-center mb-4">
@@ -84,11 +111,8 @@ export default function Home() {
          
               )}
               <div className="space-y-2 mt-4">
-                {tasks.map((task, index) => (
-                    
+                {displayedTasks.map((task, index) => (
                   <TaskItem key={index} task={task} />
-                  
-    
                 ))}
                 
               </div>

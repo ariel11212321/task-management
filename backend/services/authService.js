@@ -2,9 +2,9 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 
 const authService = {
-  async login(email, password) {
+  async login(username, password) {
     try {
-      const result = await auth.login(email, password);
+      const result = await auth.login(username, password);
       return result;
     } catch (error) {
       throw new Error('Invalid login credentials');

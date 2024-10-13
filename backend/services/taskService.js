@@ -6,7 +6,10 @@ const taskService = {
     await task.save();
     return task;
   },
-
+  async getAllTasks() {
+    const tasks = await Task.find();
+    return tasks;
+  },
   async getTask(taskId) {
     const task = await Task.findById(taskId).populate('assignedTo createdBy');
     if (!task) {

@@ -20,6 +20,14 @@ const taskController = {
       next(error);
     }
   },
+  async getAllTasks(req, res, next) {
+    try {
+      const tasks = await taskService.getAllTasks();
+      res.json(tasks);
+    } catch(error) {
+      next(error);
+    }
+  },
 
   async updateTask(req, res, next) {
     try {

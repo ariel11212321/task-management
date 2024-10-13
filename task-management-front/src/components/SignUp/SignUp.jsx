@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { ArrowRight, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import useHttp from "../../hooks/useHttp";
+import config from '../../config.json';
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -13,25 +15,26 @@ const formSchema = z.object({
 })
 
 export default function SignUp() {
-  const [isLoading, setIsLoading] = useState(false)
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(formSchema),
-  })
-
+  });
   const navigate = useNavigate();
+  const {isLoading, error, sendRequest} = useHttp();
 
   const onSubmit = async (data) => {
-    setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    navigate("/home");
-    console.log(data)
-    setIsLoading(false)
-
+    try {
+      const { username, email, password } = data;
+      const res = await sendRequest(config.SERVER_URL + "/register", 'POST', {username, email, password});
+      navigate("/login");
+    } catch(error) {
+      alert('error registering');
+    }
   }
+
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4 sm:px-6 lg:px-8">

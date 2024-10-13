@@ -40,8 +40,8 @@ const auth = {
 
  
 
-  login: async (email, password) => {
-    const user = await User.findOne({ email });
+  login: async (username, password) => {
+    const user = await User.findOne({ username });
     if (!user) {
       throw new Error('Invalid login credentials');
     }
@@ -60,7 +60,6 @@ const auth = {
     if (existingUser) {
       throw new Error('Email already in use');
     }
-
     const user = new User(userData);
     await user.save();
 

@@ -3,32 +3,42 @@ import { motion } from "framer-motion"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-
 import { ArrowRight, Loader2 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
-
+import useHttp from '../../hooks/useHttp';
+import config from '../../config.json';
+import { useAuth } from "../../contexts/AuthContext"
+import { useUser } from "../../contexts/UserContext"
 const formSchema = z.object({
-  email: z.string().email({ message: "Invalid email address" }),
+  username: z.string(),
   password: z.string().min(8, { message: "Password must be at least 8 characters" }),
 })
 
 export default function Login() {
-  const [isLoading, setIsLoading] = useState(false)
+  const { isLoading, error, sendRequest } = useHttp();
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(formSchema),
-  })
+  });
+  const {login} = useAuth();
+  const {setUser} = useUser();
 
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
-    setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    navigate("/home");
-    setIsLoading(false)
+    try {
+      const { username, password } = data;
+      const res = await sendRequest(config.SERVER_URL + "/login", 'POST', {username, password});
+      login(res.token);
+      setUser(res.user);
+      navigate("/home");
+    } catch(error) {
+      alert('error logging in');
+      console.error("Error during registration:", error);
+    }
   }
 
   return (
@@ -57,21 +67,21 @@ export default function Login() {
             className="rounded-md shadow-sm -space-y-px"
           >
             <div>
-              <label htmlFor="email" className="sr-only">
-                Email address
+              <label htmlFor="username" className="sr-only">
+                username
               </label>
               <input
-                id="email"
-                type="email"
-                {...register("email")}
+                id="username"
+                type="username"
+                {...register("username")}
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
-                  errors.email ? "border-red-300" : "border-gray-300"
+                  errors.username ? "border-red-300" : "border-gray-300"
                 } placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                 style={{ backgroundColor: 'white' }}
-                placeholder="Email address"
+                placeholder="username"
               />
-              {errors.email && (
-                <p className="mt-2 text-sm text-red-600">{errors.email.message}</p>
+              {errors.username && (
+                <p className="mt-2 text-sm text-red-600">{errors.username.message}</p>
               )}
             </div>
             <div>

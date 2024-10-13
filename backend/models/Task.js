@@ -29,14 +29,8 @@ const taskSchema = new mongoose.Schema({
   }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
-    refPath: 'createdByModel',
     required: true
   },
-  createdByModel: {
-    type: String,
-    required: true,
-    enum: ['User', 'Group']
-  }
 }, {
   timestamps: true
 });
