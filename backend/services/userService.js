@@ -1,3 +1,4 @@
+const Task = require('../models/Task');
 const User = require('../models/User');
 
 const userService = {
@@ -39,6 +40,10 @@ const userService = {
     if (!result) {
       throw new Error('User not found');
     }
+  },
+  async getTasksById(userId) {
+    const tasks = await Task.find({createdBy: userId});
+    return tasks;
   }
 };
 

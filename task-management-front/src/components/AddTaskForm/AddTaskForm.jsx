@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import config from '../../config.json';
 import { useUser } from '../../contexts/UserContext';
 import moment from 'moment';
-const AddTaskForm = ({ onAddTask, onCancel, initialDate }) => {
+const AddTaskForm = ({ onAddTask, onCancel, initialDate, isTeamTask=false }) => {
   const [taskName, setTaskName] = useState('');
   const [dueDate, setDueDate] = useState(initialDate || moment().format('YYYY-MM-DD'));
-  const [status, setStatus] = useState('Not Started');
+  const [status, setStatus] = useState('pending');
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
 
@@ -21,7 +21,7 @@ const AddTaskForm = ({ onAddTask, onCancel, initialDate }) => {
         priority,
         description,
         assignedTo: [],
-        createdBy: user._id
+        createdBy: isTeamTask ? user.group : user._id
       });
       setTaskName('');
       setDueDate('');

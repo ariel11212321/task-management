@@ -6,7 +6,7 @@ import dateHelper from "../../lib/dateHelper";
 
 
 
-const TaskItem = ({ task, isTeamTask=false }) => (
+const TaskItem = ({ task, isTeamTask=false, members=[] }) => (
   <div className="flex items-center p-2 hover:bg-gray-100 rounded-md">
     
     <div className="flex-grow">
@@ -19,8 +19,13 @@ const TaskItem = ({ task, isTeamTask=false }) => (
       <div className={`text-xs ${task.status === 'completed' ? 'text-green-500' : 'text-blue-500'}`}>
         Status: {task.status}
       </div>
-      {isTeamTask && (
-        <div className="text-xs text-gray-600">Assigned to: {task.assignedTo}</div>
+      {isTeamTask && task.assignedTo && (
+        <div className="text-xs text-gray-600">
+          Assigned to: {task.assignedTo.map(memberId => {
+            const member = members.find(m => m._id === memberId);
+            return member ? member.username : 'Unknown';
+          }).join(', ')}
+        </div>
       )}
     </div>
     

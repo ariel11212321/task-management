@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -10,35 +10,56 @@ import { useAuth } from '../../contexts/AuthContext';
 import config from '../../config.json';
 import SideBar from '../SideBar';
 import dateHelper from '../../lib/dateHelper';
+import { useUser } from '../../contexts/UserContext';
 
 const localizer = momentLocalizer(moment);
 
 const TaskCalendarPage = () => {
   const [tasks, setTasks] = useState([]);
+  const [groupTasks, setGroupTasks] = useState([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);  // New state for selected date
   const { sendRequest, isLoading, error } = useHttp();
   const { isAuthenticated, token } = useAuth();
+  const {user} = useUser();
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+    if(user.group) {
+      fetchGroupTasks();
+    }
+  }, [user.group]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async() => {
+    try {
+      if (isAuthenticated) {
+        const fetchedTasks = await sendRequest(config.SERVER_URL + "/users/"+user._id+"/tasks", 'GET', null, {
+          'Authorization': 'Bearer ' + token
+        });
+        if (fetchedTasks) {
+          setTasks(fetchedTasks);
+        }
+      }
+    } catch(e) {
+
+    }
+  }, []);
+  const fetchGroupTasks = async() => {
     if (isAuthenticated) {
-      const fetchedTasks = await sendRequest(config.SERVER_URL + "/tasks/", 'GET', null, {
+      const response = await sendRequest(`${config.SERVER_URL}/groups/${user.group}/tasks`, 'GET', null, {
         'Authorization': 'Bearer ' + token
       });
-      if (fetchedTasks) {
-        setTasks(fetchedTasks);
+      if (response) {
+        setGroupTasks(response);
       }
     }
-  };
+  }
+
 
   const events = useMemo(() => {
-    return tasks.map(task => {
+    return [...tasks, ...groupTasks].map(task => {
       const dueDate = new Date(dateHelper.formatDate(task.dueDate));
       return {
         id: task.id,
@@ -94,12 +115,12 @@ const TaskCalendarPage = () => {
       }
     }
     setIsAddingTask(false);
-    setSelectedDate(null);  // Reset selected date after adding task
+    setSelectedDate(null);  
   };
 
   const handleUpdateTask = async (updatedTask) => {
     if (isAuthenticated) {
-      const updated = await sendRequest(`${config.SERVER_URL}/tasks/${updatedTask.id}`, 'PUT', updatedTask, {
+      const updated = await sendRequest(`${config.SERVER_URL}/tasks/${updatedTask._id}`, 'PUT', updatedTask, {
         'Authorization': 'Bearer ' + token
       });
       if (updated) {
@@ -167,6 +188,7 @@ const TaskCalendarPage = () => {
           closeModal={() => setIsUpdateModalOpen(false)}
           task={selectedTask}
           onUpdate={handleUpdateTask}
+          isTeamTask={groupTasks.includes(selectedTask)}
         />
       )}
     </div>

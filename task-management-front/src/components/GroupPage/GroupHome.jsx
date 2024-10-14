@@ -1,18 +1,21 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Edit, Trash } from 'lucide-react';
-import AddTaskForm from '../AddTaskForm';
-import TaskItem from '../TaskItem';
-import SideBar from '../SideBar';
-import Header from '../Header';
-import useHttp from '../../hooks/useHttp';
-import config from '../../config.json';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUser } from '../../contexts/UserContext';
 import { useNavigate } from 'react-router-dom';
-import UpdateTaskModal from '../UpdateTaskModal';
+import useHttp from '../../hooks/useHttp';
+import config from '../../config.json';
 
-export default function Home() {
-  const [allTasks, setAllTasks] = useState([]);
+import Header from '../Header';
+import SideBar from '../SideBar';
+import AddTaskForm from '../AddTaskForm';
+import TaskItem from '../TaskItem';
+import UpdateTaskModal from '../UpdateTaskModal';
+import ManageGroup from './ManageGroup';
+
+export default function GroupHome() {
+  const [groupTasks, setGroupTasks] = useState([]);
+  const [group, setGroup] = useState([]);
   const [displayedTasks, setDisplayedTasks] = useState([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState([]);
@@ -20,81 +23,94 @@ export default function Home() {
   const [taskToUpdate, setTaskToUpdate] = useState(null);
   const { sendRequest, isLoading, error } = useHttp();
   const { isAuthenticated, token } = useAuth();
-  const { user, updateUser } = useUser();
+  const { user } = useUser();
   const navigate = useNavigate();
 
-  const addTask = useCallback(async (data) => {
-    if (isAuthenticated) {
-      const res = await sendRequest(config.SERVER_URL + "/tasks/", 'POST', data, {
+  const fetchGroup = async() => {
+    if (user.group) {
+      const res = await sendRequest(`${config.SERVER_URL}/groups/${user.group}`, 'GET', null, {
+        'Authorization': 'Bearer ' + token
+      });
+      setGroup(res);
+    } else {
+      navigate("/login");
+    }
+  }
+
+  const fetchGroupTasks = useCallback(async () => {
+    if (isAuthenticated && user.group) {
+      const res = await sendRequest(`${config.SERVER_URL}/groups/${user.group}/tasks`, 'GET', null, {
         'Authorization': 'Bearer ' + token
       });
       if (res) {
-        setAllTasks(prevTasks => [...prevTasks, res]);
+        setGroupTasks(res);
+        setDisplayedTasks(res);
+      }
+    } else {
+      navigate("/login");
+    }
+  }, [isAuthenticated, user.group, sendRequest, token, navigate]);
+
+  useEffect(() => {
+    fetchGroupTasks();
+    fetchGroup();
+  }, [fetchGroupTasks]);
+
+  const addTask = useCallback(async (data) => {
+    if (isAuthenticated && user.group) {
+      const res = await sendRequest(`${config.SERVER_URL}/tasks`, 'POST', data, {
+        'Authorization': 'Bearer ' + token
+      });
+      if (res) {
+        setGroupTasks(prevTasks => [...prevTasks, res]);
         setDisplayedTasks(prevTasks => [...prevTasks, res]);
       }
     } else {
       navigate("/login");
     }
-  }, [isAuthenticated, sendRequest, token, navigate]);
+  }, [isAuthenticated, user.group, sendRequest, token, navigate]);
 
   const updateTask = useCallback(async (updatedTask) => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user.group) {
       const res = await sendRequest(`${config.SERVER_URL}/tasks/${updatedTask._id}`, 'PUT', updatedTask, {
         'Authorization': 'Bearer ' + token
       });
       if (res) {
-        setAllTasks(prevTasks => prevTasks.map(task => task._id === updatedTask._id ? res : task));
+        setGroupTasks(prevTasks => prevTasks.map(task => task._id === updatedTask._id ? res : task));
         setDisplayedTasks(prevTasks => prevTasks.map(task => task._id === updatedTask._id ? res : task));
       }
     } else {
       navigate("/login");
     }
-  }, [isAuthenticated, sendRequest, token, navigate]);
+  }, [isAuthenticated, user.group, sendRequest, token, navigate]);
 
   const deleteTasks = useCallback(async () => {
-    if (isAuthenticated && selectedTasks.length > 0) {
+    if (isAuthenticated && user.group && selectedTasks.length > 0) {
       try {
         const deletePromises = selectedTasks.map(taskId =>
           sendRequest(`${config.SERVER_URL}/tasks/${taskId}`, 'DELETE', null, {
             'Authorization': 'Bearer ' + token
           })
         );
+        
         await Promise.all(deletePromises);
-        setAllTasks(prevTasks => prevTasks.filter(task => !selectedTasks.includes(task._id)));
+        setGroupTasks(prevTasks => prevTasks.filter(task => !selectedTasks.includes(task._id)));
         setDisplayedTasks(prevTasks => prevTasks.filter(task => !selectedTasks.includes(task._id)));
         setSelectedTasks([]);
-      } catch(e) {
+      } catch (error) {
         
       }
     } else if (!isAuthenticated) {
       navigate("/login");
     }
-  }, [isAuthenticated, selectedTasks, sendRequest, token, navigate]);
+  }, [isAuthenticated, user.group, selectedTasks, sendRequest, token, navigate, fetchGroupTasks]);
 
   const searchTasks = useCallback((searchTerm) => {
-    const filteredTasks = allTasks.filter(task =>
+    const filteredTasks = groupTasks.filter(task =>
       task.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setDisplayedTasks(filteredTasks);
-  }, [allTasks]);
-
-  const fetchTasks = async () => {
-    if (isAuthenticated) {
-      const res = await sendRequest(config.SERVER_URL + "/users/"+user._id+"/tasks", 'GET', null, {
-        'Authorization': 'Bearer ' + token
-      });
-      if (res) {
-        setAllTasks(res);
-        setDisplayedTasks(res);
-      }
-    } else {
-      navigate("/login");
-    }
-  };
-
-  useEffect(() => {
-    fetchTasks();
-  }, [user?._id]);
+  }, [groupTasks]);
 
   const handleTaskSelect = (taskId) => {
     setSelectedTasks(prev =>
@@ -107,15 +123,27 @@ export default function Home() {
     setIsUpdateModalOpen(true);
   };
 
+  if (isLoading) {
+    return <div className="p-4">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">{error}</div>;
+  }
+
   return (
     <div className="flex h-screen bg-gray-100">
       <SideBar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header searchTasks={searchTasks}/>
+        <Header searchTasks={searchTasks} />
         <main className="flex-1 overflow-y-auto p-4">
+
+          {group.admin === user._id && (
+            <ManageGroup group={group}/>
+          )}
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Tasks</h3>
+              <h3 className="text-lg font-semibold">Group Tasks</h3>
               <div>
                 <button
                   onClick={() => setIsAddingTask(true)}
@@ -135,6 +163,7 @@ export default function Home() {
             </div>
             {isAddingTask && (
               <AddTaskForm
+                isTeamTask={true}
                 onAddTask={addTask}
                 onCancel={() => setIsAddingTask(false)}
               />
@@ -148,7 +177,7 @@ export default function Home() {
                     onChange={() => handleTaskSelect(task._id)}
                     className="mr-2"
                   />
-                  <TaskItem task={task} />
+                  <TaskItem isTeamTask={true} task={task} members={group.members} />
                   <button
                     onClick={() => openUpdateModal(task)}
                     className="ml-2 text-blue-600 hover:text-blue-800"
@@ -164,6 +193,7 @@ export default function Home() {
       {taskToUpdate && (
         <UpdateTaskModal
           isOpen={isUpdateModalOpen}
+          isTeamTask={true}
           closeModal={() => setIsUpdateModalOpen(false)}
           task={taskToUpdate}
           onUpdate={updateTask}

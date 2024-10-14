@@ -31,6 +31,7 @@ const taskService = {
     if (!result) {
       throw new Error('Task not found');
     }
+    return result;
   }
 };
 

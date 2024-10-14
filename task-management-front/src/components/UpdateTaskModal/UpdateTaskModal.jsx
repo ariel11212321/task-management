@@ -1,8 +1,41 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
+import useHttp from '../../hooks/useHttp';
+import config from '../../config.json';
+import { useAuth } from '../../contexts/AuthContext';
+import { useUser } from '../../contexts/UserContext';
 
-const UpdateTaskModal = ({ isOpen, closeModal, task, onUpdate, isTeamTask=false }) => {
+const UpdateTaskModal = ({ isOpen, closeModal, task, onUpdate, isTeamTask = false }) => {
   const [updatedTask, setUpdatedTask] = useState(task);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [selectedMembers, setSelectedMembers] = useState([]);
+  const { sendRequest, isLoading, error } = useHttp();
+  const { user } = useUser();
+  const { token } = useAuth();
+
+  const fetchTeam = async () => {
+    const res = await sendRequest(config.SERVER_URL + "/groups/" + user.group, "GET", null, {
+      'Authorization': 'Bearer ' + token
+    });
+    setTeamMembers(res.members);
+  }
+
+  useEffect(() => {
+    fetchTeam();
+    if (task.assignedTo) {
+      setSelectedMembers(task.assignedTo);
+    }
+  }, [user.group, task]);
+
+  const handleMemberSelection = (memberId) => {
+    setSelectedMembers(prevMembers => {
+      if (prevMembers.includes(memberId)) {
+        return prevMembers.filter(id => id !== memberId);
+      } else {
+        return [...prevMembers, memberId];
+      }
+    });
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -11,7 +44,11 @@ const UpdateTaskModal = ({ isOpen, closeModal, task, onUpdate, isTeamTask=false 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onUpdate(updatedTask);
+    const taskToUpdate = {
+      ...updatedTask,
+      assignedTo: selectedMembers
+    };
+    onUpdate(taskToUpdate);
     closeModal();
   };
 
@@ -126,6 +163,23 @@ const UpdateTaskModal = ({ isOpen, closeModal, task, onUpdate, isTeamTask=false 
                       <option value="completed">Completed</option>
                     </select>
                   </div>
+                  {isTeamTask && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Assign To</label>
+                      {teamMembers.map(member => (
+                        <div key={member._id} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id={`member-${member._id}`}
+                            checked={selectedMembers.includes(member._id)}
+                            onChange={() => handleMemberSelection(member._id)}
+                            className="mr-2"
+                          />
+                          <label htmlFor={`member-${member._id}`}>{member.username}</label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="mt-4">
                     <button
                       type="submit"

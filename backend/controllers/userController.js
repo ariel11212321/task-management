@@ -40,6 +40,15 @@ const userController = {
     } catch (error) {
       next(error);
     }
+  },
+  async getTasksById(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const tasks = await userService.getTasksById(userId);
+      res.send(tasks);
+    } catch (error) {
+      next(error);
+    }
   }
 };
 

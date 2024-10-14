@@ -8,7 +8,7 @@ export default function Header({searchTasks}) {
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center">
             <Menu className="mr-4 text-gray-500" />
-            <h2 className="text-xl font-semibold">welcome {user?.username ? user?.username: 'guest'}, your tasks </h2>
+            <h2 className="text-xl font-semibold">welcome {user?.username ? user?.username: 'guest'} </h2>
           </div>
           <div className="flex items-center space-x-4">
             <div className="relative">

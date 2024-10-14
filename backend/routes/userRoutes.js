@@ -7,5 +7,5 @@ router.post('/', authenticate, userController.createUser);
 router.get('/:userId', authenticate, userController.getUser);
 router.put('/:userId', authenticate, userController.updateUser);
 router.delete('/:userId', authenticate, userController.deleteUser);
-
+router.get('/:userId/tasks',authenticate, userController.getTasksById);
 module.exports = router;

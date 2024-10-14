@@ -43,8 +43,8 @@ const taskController = {
   async deleteTask(req, res, next) {
     try {
       const { taskId } = req.params;
-      await taskService.deleteTask(taskId);
-      res.status(204).send();
+      const result = await taskService.deleteTask(taskId);
+      res.status(204).send(result);
     } catch (error) {
       next(error);
     }
