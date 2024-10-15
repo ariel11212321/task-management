@@ -1,100 +1,35 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Plus, Edit, Trash } from 'lucide-react';
 import AddTaskForm from '../AddTaskForm';
 import TaskItem from '../TaskItem';
 import SideBar from '../SideBar';
 import Header from '../Header';
-import useHttp from '../../hooks/useHttp';
-import config from '../../config.json';
-import { useAuth } from '../../contexts/AuthContext';
-import { useUser } from '../../contexts/UserContext';
-import { useNavigate } from 'react-router-dom';
 import UpdateTaskModal from '../UpdateTaskModal';
+import useTasks from '../../hooks/useTasks';
 
 export default function Home() {
-  const [allTasks, setAllTasks] = useState([]);
-  const [displayedTasks, setDisplayedTasks] = useState([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [taskToUpdate, setTaskToUpdate] = useState(null);
-  const { sendRequest, isLoading, error } = useHttp();
-  const { isAuthenticated, token } = useAuth();
-  const { user, updateUser } = useUser();
-  const navigate = useNavigate();
 
-  const addTask = useCallback(async (data) => {
-    if (isAuthenticated) {
-      const res = await sendRequest(config.SERVER_URL + "/tasks/", 'POST', data, {
-        'Authorization': 'Bearer ' + token
-      });
-      if (res) {
-        setAllTasks(prevTasks => [...prevTasks, res]);
-        setDisplayedTasks(prevTasks => [...prevTasks, res]);
-      }
-    } else {
-      navigate("/login");
-    }
-  }, [isAuthenticated, sendRequest, token, navigate]);
 
-  const updateTask = useCallback(async (updatedTask) => {
-    if (isAuthenticated) {
-      const res = await sendRequest(`${config.SERVER_URL}/tasks/${updatedTask._id}`, 'PUT', updatedTask, {
-        'Authorization': 'Bearer ' + token
-      });
-      if (res) {
-        setAllTasks(prevTasks => prevTasks.map(task => task._id === updatedTask._id ? res : task));
-        setDisplayedTasks(prevTasks => prevTasks.map(task => task._id === updatedTask._id ? res : task));
-      }
-    } else {
-      navigate("/login");
-    }
-  }, [isAuthenticated, sendRequest, token, navigate]);
+  const { tasks, isLoading, error, addTask, updateTask, deleteTask } = useTasks();
 
-  const deleteTasks = useCallback(async () => {
-    if (isAuthenticated && selectedTasks.length > 0) {
-      try {
-        const deletePromises = selectedTasks.map(taskId =>
-          sendRequest(`${config.SERVER_URL}/tasks/${taskId}`, 'DELETE', null, {
-            'Authorization': 'Bearer ' + token
-          })
-        );
-        await Promise.all(deletePromises);
-        setAllTasks(prevTasks => prevTasks.filter(task => !selectedTasks.includes(task._id)));
-        setDisplayedTasks(prevTasks => prevTasks.filter(task => !selectedTasks.includes(task._id)));
-        setSelectedTasks([]);
-      } catch(e) {
-        
-      }
-    } else if (!isAuthenticated) {
-      navigate("/login");
-    }
-  }, [isAuthenticated, selectedTasks, sendRequest, token, navigate]);
+  const handleAddTask = useCallback((data) => {
+    addTask(data);
+    setIsAddingTask(false);
+  }, [addTask]);
 
-  const searchTasks = useCallback((searchTerm) => {
-    const filteredTasks = allTasks.filter(task =>
-      task.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setDisplayedTasks(filteredTasks);
-  }, [allTasks]);
+  const handleUpdateTask = useCallback((updatedTask) => {
+    updateTask(updatedTask);
+    setIsUpdateModalOpen(false);
+  }, [updateTask]);
 
-  const fetchTasks = async () => {
-    if (isAuthenticated) {
-      const res = await sendRequest(config.SERVER_URL + "/users/"+user._id+"/tasks", 'GET', null, {
-        'Authorization': 'Bearer ' + token
-      });
-      if (res) {
-        setAllTasks(res);
-        setDisplayedTasks(res);
-      }
-    } else {
-      navigate("/login");
-    }
-  };
-
-  useEffect(() => {
-    fetchTasks();
-  }, [user?._id]);
+  const handleDeleteTasks = useCallback(() => {
+    selectedTasks.forEach(taskId => deleteTask(taskId));
+    setSelectedTasks([]);
+  }, [selectedTasks, deleteTask]);
 
   const handleTaskSelect = (taskId) => {
     setSelectedTasks(prev =>
@@ -107,11 +42,14 @@ export default function Home() {
     setIsUpdateModalOpen(true);
   };
 
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
   return (
     <div className="flex h-screen bg-gray-100">
       <SideBar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header searchTasks={searchTasks}/>
+        <Header />
         <main className="flex-1 overflow-y-auto p-4">
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex justify-between items-center mb-4">
@@ -125,7 +63,7 @@ export default function Home() {
                 </button>
                 {selectedTasks.length > 0 && (
                   <button
-                    onClick={deleteTasks}
+                    onClick={handleDeleteTasks}
                     className="flex items-center text-sm text-red-600 hover:text-red-800"
                   >
                     <Trash size={16} className="mr-1" /> Delete Selected
@@ -135,12 +73,12 @@ export default function Home() {
             </div>
             {isAddingTask && (
               <AddTaskForm
-                onAddTask={addTask}
+                onAddTask={handleAddTask}
                 onCancel={() => setIsAddingTask(false)}
               />
             )}
             <div className="space-y-2 mt-4">
-              {displayedTasks.map((task) => (
+              {tasks.map((task) => (
                 <div key={task._id} className="flex items-center">
                   <input
                     type="checkbox"
@@ -166,7 +104,7 @@ export default function Home() {
           isOpen={isUpdateModalOpen}
           closeModal={() => setIsUpdateModalOpen(false)}
           task={taskToUpdate}
-          onUpdate={updateTask}
+          onUpdate={handleUpdateTask}
         />
       )}
     </div>

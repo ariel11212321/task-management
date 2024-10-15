@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function GroupPage() {
   const { user, setUser } = useUser();
-  const { isAuthenticated, token } = useAuth();
+  const { token } = useAuth();
   const { sendRequest, isLoading, error } = useHttp();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
@@ -25,7 +25,6 @@ export default function GroupPage() {
 
   const handleCreateGroup = useCallback(async (e) => {
     e.preventDefault();
-    if (isAuthenticated) {
       const res = await sendRequest(config.SERVER_URL + "/groups", "POST", { name: groupName, admin: user._id, members: [user._id] }, {
         "Authorization": "Bearer " + token
       });
@@ -33,25 +32,16 @@ export default function GroupPage() {
         setUser({ ...user, group: res._id });
         setShowModal(false);
       }
-    } else {
-      navigate("/login");
-    }
-  }, [isAuthenticated, sendRequest, token, navigate, groupName, user, setUser]);
+  }, [sendRequest, token, groupName, user, setUser]);
 
   const handleJoinGroup = useCallback(async (e) => {
     e.preventDefault();
-    if (isAuthenticated) {
       const res = await sendRequest(config.SERVER_URL + `/groups/${groupId}/members`, "POST", {}, {
         "Authorization": "Bearer " + token
       });
-      if (res) {
-        setUser({ ...user, group: res._id });
-        setShowModal(false);
-      }
-    } else {
-      navigate("/login");
-    }
-  }, [isAuthenticated, sendRequest, token, navigate, groupId, user, setUser]);
+      setUser({ ...user, group: res._id });
+      setShowModal(false);
+  }, [sendRequest, token, groupId, user, setUser]);
 
   if (isLoading) {
     return <div className="p-4">Loading...</div>;

@@ -1,65 +1,40 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Plus } from 'lucide-react';
 import UpdateTaskModal from '../UpdateTaskModal';
 import AddTaskForm from '../AddTaskForm';
-import useHttp from '../../hooks/useHttp';
-import { useAuth } from '../../contexts/AuthContext';
-import config from '../../config.json';
 import SideBar from '../SideBar';
 import dateHelper from '../../lib/dateHelper';
 import { useUser } from '../../contexts/UserContext';
+import useTasks from '../../hooks/useTasks';
 
 const localizer = momentLocalizer(moment);
 
 const TaskCalendarPage = () => {
-  const [tasks, setTasks] = useState([]);
-  const [groupTasks, setGroupTasks] = useState([]);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);  // New state for selected date
-  const { sendRequest, isLoading, error } = useHttp();
-  const { isAuthenticated, token } = useAuth();
-  const {user} = useUser();
+  const [selectedDate, setSelectedDate] = useState(null);
+  const { user } = useUser();
 
-  useEffect(() => {
-    fetchTasks();
-    if(user.group) {
-      fetchGroupTasks();
-    }
-  }, [user.group]);
+  const { 
+    tasks: personalTasks, 
+    isLoading: isPersonalTasksLoading, 
+    error: personalTasksError,
+    addTask: addPersonalTask,
+    updateTask: updatePersonalTask
+  } = useTasks(false);
 
-  const fetchTasks = useCallback(async() => {
-    try {
-      if (isAuthenticated) {
-        const fetchedTasks = await sendRequest(config.SERVER_URL + "/users/"+user._id+"/tasks", 'GET', null, {
-          'Authorization': 'Bearer ' + token
-        });
-        if (fetchedTasks) {
-          setTasks(fetchedTasks);
-        }
-      }
-    } catch(e) {
-
-    }
-  }, []);
-  const fetchGroupTasks = async() => {
-    if (isAuthenticated) {
-      const response = await sendRequest(`${config.SERVER_URL}/groups/${user.group}/tasks`, 'GET', null, {
-        'Authorization': 'Bearer ' + token
-      });
-      if (response) {
-        setGroupTasks(response);
-      }
-    }
-  }
-
+  const { 
+    tasks: groupTasks, 
+    isLoading: isGroupTasksLoading, 
+    error: groupTasksError
+  } = useTasks(true);
 
   const events = useMemo(() => {
-    return [...tasks, ...groupTasks].map(task => {
+    return [...personalTasks, ...groupTasks].map(task => {
       const dueDate = new Date(dateHelper.formatDate(task.dueDate));
       return {
         id: task.id,
@@ -70,7 +45,7 @@ const TaskCalendarPage = () => {
         resource: task
       };
     });
-  }, [tasks]);
+  }, [personalTasks, groupTasks]);
 
   const eventStyleGetter = (event) => {
     let backgroundColor = '#3174ad';
@@ -102,40 +77,26 @@ const TaskCalendarPage = () => {
   };
 
   const handleAddTask = async (newTask) => {
-    if (isAuthenticated) {
-      const taskToAdd = {
-        ...newTask,
-        dueDate: new Date(dateHelper.formatDate(newTask.dueDate))
-      };
-      const addedTask = await sendRequest(config.SERVER_URL + "/tasks/", 'POST', taskToAdd, {
-        'Authorization': 'Bearer ' + token
-      });
-      if (addedTask) {
-        setTasks(prevTasks => [...prevTasks, addedTask]);
-      }
-    }
+    const taskToAdd = {
+      ...newTask,
+      dueDate: new Date(dateHelper.formatDate(newTask.dueDate))
+    };
+    await addPersonalTask(taskToAdd);
     setIsAddingTask(false);
     setSelectedDate(null);  
   };
 
   const handleUpdateTask = async (updatedTask) => {
-    if (isAuthenticated) {
-      const updated = await sendRequest(`${config.SERVER_URL}/tasks/${updatedTask._id}`, 'PUT', updatedTask, {
-        'Authorization': 'Bearer ' + token
-      });
-      if (updated) {
-        setTasks(prevTasks => prevTasks.map(task => task.id === updatedTask.id ? updated : task));
-      }
-    }
+    await updatePersonalTask(updatedTask);
     setIsUpdateModalOpen(false);
   };
 
-  if (isLoading) {
+  if (isPersonalTasksLoading || isGroupTasksLoading) {
     return <div>Loading...</div>;
   }
 
-  if (error) {
-    return <div>Error: {error}</div>;
+  if (personalTasksError || groupTasksError) {
+    return <div>Error: {personalTasksError || groupTasksError}</div>;
   }
 
   return (
@@ -188,7 +149,7 @@ const TaskCalendarPage = () => {
           closeModal={() => setIsUpdateModalOpen(false)}
           task={selectedTask}
           onUpdate={handleUpdateTask}
-          isTeamTask={groupTasks.includes(selectedTask)}
+          isTeamTask={groupTasks.some(task => task._id === selectedTask._id)}
         />
       )}
     </div>

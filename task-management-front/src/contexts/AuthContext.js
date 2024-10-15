@@ -1,34 +1,39 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
+import Cookies from 'js-cookie';
+import { useUser } from './UserContext';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [token, setToken] = useState(() => {
-       
-        return localStorage.getItem('token') || '';
+        return Cookies.get('token') || '';
     });
 
+    const { user, setUser } = useUser();
+
     useEffect(() => {
-       
-        if (token) {
+        if (token && user) {
             setIsAuthenticated(true);
         } else {
             setIsAuthenticated(false);
         }
-    }, [token]);
+    }, [token, user]);
 
     const login = (newToken) => {
         setToken(newToken);
-        localStorage.setItem('token', newToken); 
+        Cookies.set('token', newToken, { 
+            expires: 7, 
+            secure: true, 
+            sameSite: 'strict' 
+        });
         setIsAuthenticated(true);
     };
 
     const logout = () => {
         setToken('');
-        localStorage.removeItem('token'); 
+        setUser(null);
+        Cookies.remove('token');
         setIsAuthenticated(false);
     };
 
