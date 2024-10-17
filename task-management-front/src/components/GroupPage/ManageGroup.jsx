@@ -15,23 +15,21 @@ const ManageGroup = ({ group, onGroupUpdated }) => {
       'Authorization': 'Bearer ' + token
     });
     if (res) {
-      onGroupUpdated(res);
+      group.members.push(res);
       setNewMemberEmail('');
     }
   };
 
   const removeMember = async (memberId) => {
     const res = await sendRequest(`${config.SERVER_URL}/groups/${group._id}/members/${memberId}`, 'DELETE', null, {
-      'Authorization': 'Bearer ' + token 
+      'Authorization': 'Bearer ' + token,
     });
     if (res) {
-      onGroupUpdated(res);
+      group.members = group.members.filter(member => member._id !== memberId);
     }
   };
 
-  if (group.admin !== user._id) {
-    return null;
-  }
+
 
   return (
     <div className="bg-white shadow rounded-lg p-4">

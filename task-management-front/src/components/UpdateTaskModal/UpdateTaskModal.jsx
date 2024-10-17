@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import useHttp from '../../hooks/useHttp';
 import config from '../../config.json';
@@ -9,23 +9,23 @@ const UpdateTaskModal = ({ isOpen, closeModal, task, onUpdate, isTeamTask = fals
   const [updatedTask, setUpdatedTask] = useState(task);
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedMembers, setSelectedMembers] = useState([]);
-  const { sendRequest, isLoading, error } = useHttp();
+  const { sendRequest } = useHttp();
   const { user } = useUser();
   const { token } = useAuth();
 
-  const fetchTeam = async () => {
+  const fetchTeam = useCallback(async () => {
     const res = await sendRequest(config.SERVER_URL + "/groups/" + user.group, "GET", null, {
       'Authorization': 'Bearer ' + token
     });
     setTeamMembers(res.members);
-  }
+  }, [sendRequest, token, user.group]);
 
   useEffect(() => {
     fetchTeam();
     if (task.assignedTo) {
       setSelectedMembers(task.assignedTo);
     }
-  }, [user.group, task]);
+  }, [user.group, task, fetchTeam]);
 
   const handleMemberSelection = (memberId) => {
     setSelectedMembers(prevMembers => {

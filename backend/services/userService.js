@@ -27,7 +27,6 @@ const userService = {
         throw new Error('Email already in use');
       }
     }
-
     const user = await User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true }).select('-password');
     if (!user) {
       throw new Error('User not found');

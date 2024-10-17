@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Plus, Edit, Trash } from 'lucide-react';
 import AddTaskForm from '../AddTaskForm';
 import TaskItem from '../TaskItem';
@@ -6,15 +6,27 @@ import SideBar from '../SideBar';
 import Header from '../Header';
 import UpdateTaskModal from '../UpdateTaskModal';
 import useTasks from '../../hooks/useTasks';
+import Dashboard from '../Dashboard';
 
 export default function Home() {
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState([]);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [taskToUpdate, setTaskToUpdate] = useState(null);
-
+  const [searchTerm, setSearchTerm] = useState('');
 
   const { tasks, isLoading, error, addTask, updateTask, deleteTask } = useTasks();
+
+  const filteredTasks = useMemo(() => {
+    if (searchTerm.trim() === '') {
+      return tasks;
+    } else {
+      return tasks.filter(task => 
+        task.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+  }, [tasks, searchTerm]);
 
   const handleAddTask = useCallback((data) => {
     addTask(data);
@@ -42,6 +54,10 @@ export default function Home() {
     setIsUpdateModalOpen(true);
   };
 
+  const searchTasks = useCallback((search) => {
+    setSearchTerm(search);
+  }, []);
+
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error: {error.message}</div>;
 
@@ -49,7 +65,7 @@ export default function Home() {
     <div className="flex h-screen bg-gray-100">
       <SideBar />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Header />
+        <Header searchTasks={searchTasks} />
         <main className="flex-1 overflow-y-auto p-4">
           <div className="bg-white rounded-lg shadow p-4">
             <div className="flex justify-between items-center mb-4">
@@ -78,7 +94,7 @@ export default function Home() {
               />
             )}
             <div className="space-y-2 mt-4">
-              {tasks.map((task) => (
+              {filteredTasks.map((task) => (
                 <div key={task._id} className="flex items-center">
                   <input
                     type="checkbox"

@@ -1,7 +1,7 @@
 const Group = require('../models/Group');
 const Task = require('../models/Task');
 const User = require('../models/User');
-
+const mongoose = require('mongoose');
 class GroupService {
    async createGroup(groupData) {
     try {
@@ -31,12 +31,29 @@ class GroupService {
       return await Group.findByIdAndDelete(groupId);
     }
   
-    async addMemberToGroup(groupId, userId) {
-      return await Group.findByIdAndUpdate(
-        groupId,
-        { $addToSet: { members: userId } },
-        { new: true }
-      );
+    async addMemberToGroup(groupId, userMail) {
+      try {
+        const user = await User.findOne({ email: userMail });
+        if (!user) {
+          return null; 
+        }
+        const group = await Group.findByIdAndUpdate(
+          groupId,
+          { $addToSet: { members: user._id } },
+          { new: true }
+        );
+    
+        if (!group) {
+          throw new Error('Group not found');
+        }
+        user.group = groupId;
+        await user.save();
+    
+        return user;
+      } catch (error) {
+        console.error('Error adding member to group:', error);
+        throw error; 
+      }
     }
     async getTasksById(groupId) {
       const tasks = await Task.find({createdBy: groupId});
@@ -44,6 +61,11 @@ class GroupService {
     }
   
     async removeMemberFromGroup(groupId, userId) {
+      const user = await User.findById(userId);
+      if(user) {
+        user.group = "";
+        await user.save();
+      }
       return await Group.findByIdAndUpdate(
         groupId,
         { $pull: { members: userId } },

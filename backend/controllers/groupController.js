@@ -60,7 +60,7 @@ class GroupController {
   
     async removeMember(req, res) {
       try {
-        const group = await groupService.removeMemberFromGroup(req.params.id, req.body.email);
+        const group = await groupService.removeMemberFromGroup(req.params.id, req.params.userId);
         if (!group) {
           return res.status(404).json({ message: 'Group not found' });
         }

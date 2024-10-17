@@ -10,6 +10,8 @@ import Calendar from './components/Calendar';
 import GroupPage from './components/GroupPage';
 import GroupHome from './components/GroupPage/GroupHome';
 import ProtectedRoutes from './ProtectedRoutes';
+import Settings from './components/Settings';
+import Dashboard from './components/Dashboard';
 
 const queryClient = new QueryClient();
 
@@ -30,6 +32,8 @@ function App() {
           <Route path ="/calendar" element={<Calendar/>}/>
           <Route path ="/groupTasks" element={<GroupPage/>}/>
           <Route path ="/groupHome" element={<GroupHome/>}/>
+          <Route path ="/dashboard" element={<Dashboard/>}/>
+          <Route path ="/settings" element={<Settings/>} />
           </Route>
         </Routes>
     </Router>

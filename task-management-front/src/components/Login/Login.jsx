@@ -15,6 +15,7 @@ const formSchema = z.object({
 })
 
 export default function Login() {
+  const [rememberMe, setRememberMe] = useState(false);
   const { isLoading, error, sendRequest } = useHttp();
   const {
     register,
@@ -28,10 +29,12 @@ export default function Login() {
 
   const navigate = useNavigate();
 
+
+  
   const onSubmit = async (data) => {
     try {
       const { username, password } = data;
-      const res = await sendRequest(config.SERVER_URL + "/login", 'POST', {username, password});
+      const res = await sendRequest(config.SERVER_URL + "/login", 'POST', {username, password,  rememberMe});
       login(res.token);
       setUser(res.user);
       navigate("/home");
@@ -110,18 +113,7 @@ export default function Login() {
             transition={{ delay: 0.5, duration: 0.5 }}
             className="flex items-center justify-between"
           >
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                Remember me
-              </label>
-            </div>
-
+           
             <div className="text-sm">
               <a href="#" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Forgot your password?

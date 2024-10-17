@@ -5,7 +5,7 @@ import config from '../config.json';
 
 const useGroup = () => {
   const { token } = useAuth();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const queryClient = useQueryClient();
 
   const fetchGroup = async () => {
@@ -51,11 +51,60 @@ const useGroup = () => {
     }
   );
 
+  const createGroupMutation = useMutation(
+    async ({ name }) => {
+      const response = await fetch(`${config.SERVER_URL}/groups`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ name, admin: user._id, members: [user._id] })
+      });
+      if (!response.ok) {
+        throw new Error('Failed to create group');
+      }
+      return response.json();
+    },
+    {
+      onSuccess: (data) => {
+        setUser({ ...user, group: data._id });
+        queryClient.invalidateQueries(['group']);
+      }
+    }
+  );
+
+  const joinGroupMutation = useMutation(
+    async (groupId) => {
+      const response = await fetch(`${config.SERVER_URL}/groups/${groupId}/members`, {
+        method: 'POST',
+        body: JSON.stringify(user?.email),
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to join group');
+      }
+      return response.json();
+    },
+    {
+      onSuccess: (data) => {
+        setUser({ ...user, group: data._id });
+        queryClient.invalidateQueries(['group']);
+      }
+    }
+  );
+
   return {
     group,
     isLoading,
     error,
-    updateGroup: updateGroupMutation.mutate
+    updateGroup: updateGroupMutation.mutate,
+    createGroup: createGroupMutation.mutateAsync,
+    joinGroup: joinGroupMutation.mutateAsync,
+    isCreatingGroup: createGroupMutation.isLoading,
+    isJoiningGroup: joinGroupMutation.isLoading
   };
 };
 
