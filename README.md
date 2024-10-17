@@ -43,8 +43,8 @@ This is a full-stack task management application built with React and Node.js. I
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/task-management-app.git
-   cd task-management-app
+   git clone https://github.com/ariel11212321/task-management.git
+   cd task-management
    ```
 
 2. Install backend dependencies:
