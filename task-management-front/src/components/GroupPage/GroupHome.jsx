@@ -36,7 +36,7 @@ export default function GroupHome() {
   } = useGroup();
 
   const filteredTasks = useMemo(() => {
-    return groupTasks.filter(task =>
+    return groupTasks?.filter(task =>
       task.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
