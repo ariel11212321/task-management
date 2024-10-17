@@ -30,7 +30,6 @@ This is a full-stack task management application built with React and Node.js. I
 - MongoDB for database
 - Mongoose as ODM
 - JSON Web Tokens (JWT) for authentication
-- Socket.io for real-time updates
 
 ## Getting Started
 
@@ -103,6 +102,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Recharts](https://recharts.org/)
 - [React Big Calendar](https://github.com/jquense/react-big-calendar)
 
-## Contact
 
-For any queries or support, please contact [your-email@example.com](mailto:your-email@example.com).
