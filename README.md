@@ -1,3 +1,8 @@
+[![Login](images/login.png)](images/login.png)
+[![Tasks](images/tasks.png)](images/tasks.png)
+[![Dashboard](images/dashboard.png)](images/dashboard.png)
+[![Calendar](images/calendar.png)](images/calendar.png)
+
 # Task Management Application
 
 ## Overview
@@ -102,7 +107,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Recharts](https://recharts.org/)
 - [React Big Calendar](https://github.com/jquense/react-big-calendar)
 
-[![Login](images/login.png)](images/login.png)
-[![Tasks](images/tasks.png)](images/tasks.png)
-[![Dashboard](images/dashboard.png)](images/dashboard.png)
-[![Calendar](images/calendar.png)](images/calendar.png)
+
